@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/ImageProcessor.module.css';
 import Chart from 'chart.js/auto';
 
+
 // Client-side Histogram Component
 function Histogram({ imageData, title, className }) {
   const canvasRef = useRef(null);
@@ -116,6 +117,16 @@ export default function ImageProcessor() {
   const canvasRef = useRef(null);
   const adjustedCanvasRef = useRef(null);
   const timeoutRef = useRef(null);
+  const [imgWidth, setImgWidth] = useState(300);
+  const [imgHeight, setImgHeight] = useState(200);
+  
+  // Get the backend URL from environment variable
+  const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+  
+  // Debug the backend URL
+  useEffect(() => {
+    console.log("Backend URL:", backendURL);
+  }, [backendURL]);
 
   useEffect(() => {
     if (originalImage && canvasRef.current) {
@@ -125,6 +136,8 @@ export default function ImageProcessor() {
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;
         canvas.height = img.height;
+        setImgWidth(img.width);
+        setImgHeight(img.height);
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         setImageData(imgData);
@@ -178,23 +191,50 @@ export default function ImageProcessor() {
     const file = e.target.files[0];
     const fd = new FormData();
     fd.append('image', file);
+    
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      console.log(`Sending request to ${backendURL}/api/upload`);
+      const res = await fetch(`${backendURL}/api/upload`, { 
+        method: 'POST', 
+        body: fd 
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      setOriginalImage(`data:image/png;base64,${data.original_image}`);
+      console.log("Upload response:", data);
       
-      // If not using client-side histograms, set the server-generated one
-      if (!useClientHistograms) {
-        setOriginalHistogram(`data:image/png;base64,${data.original_histogram}`);
-      }
+      // Create an actual image object to verify the data is valid
+      const img = new Image();
+      img.onload = () => {
+        setImgWidth(img.width);
+        setImgHeight(img.height);
+        setOriginalImage(`data:image/png;base64,${data.original_image}`);
+        
+        // If not using client-side histograms, set the server-generated one
+        if (!useClientHistograms && data.original_histogram) {
+          setOriginalHistogram(`data:image/png;base64,${data.original_histogram}`);
+        }
+        
+        // If using server-side histograms, get the adjusted histogram as well
+        if (!useClientHistograms) {
+          adjustImageFromServer();
+        }
+      };
       
-      // If using server-side histograms, get the adjusted histogram as well
-      if (!useClientHistograms) {
-        adjustImageFromServer();
-      }
+      img.onerror = () => {
+        console.error("Failed to load image data");
+        alert("Failed to process the image. Invalid image data received from server.");
+        setLoading(false);
+      };
+      
+      img.src = `data:image/png;base64,${data.original_image}`;
+      
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Upload failed');
+      alert(`Upload failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -203,20 +243,28 @@ export default function ImageProcessor() {
   const adjustImageFromServer = async () => {
     if (!originalImage) return;
     try {
-      const res = await fetch('/api/adjust', {
+      const res = await fetch(`${backendURL}/api/adjust`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ alpha, beta }),
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
+      
       const data = await res.json();
+      console.log("Adjust response:", data);
       
       // Update the adjusted histogram (and image if needed)
-      if (!useClientHistograms) {
+      if (!useClientHistograms && data.adjusted_histogram) {
         setAdjustedHistogram(`data:image/png;base64,${data.adjusted_histogram}`);
       }
       
       // Optionally, update the adjusted image from server too for consistent results
-      // setAdjustedImage(`data:image/png;base64,${data.adjusted_image}`);
+      // if (data.adjusted_image) {
+      //   setAdjustedImage(`data:image/png;base64,${data.adjusted_image}`);
+      // }
     } catch (error) {
       console.error('Adjustment request failed:', error);
     }
@@ -231,7 +279,12 @@ export default function ImageProcessor() {
     setAdjustedImageData(null);
     setAlpha(1.0);
     setBeta(0);
-    await fetch('/api/clear', { method: 'POST' });
+    
+    try {
+      await fetch(`${backendURL}/api/clear`, { method: 'POST' });
+    } catch (error) {
+      console.error('Clear request failed:', error);
+    }
   };
 
   const toggleHistogramMode = () => {
@@ -240,6 +293,23 @@ export default function ImageProcessor() {
     if (useClientHistograms && originalImage) {
       adjustImageFromServer();
     }
+  };
+
+  // Custom image component that handles base64 images safely
+  const SafeImage = ({ src, alt, className }) => {
+    if (!src) return null;
+    
+    return (
+      <div className={className}>
+        {/* Replace Next.js Image with a regular img tag for base64 images */}
+        <img 
+          src={src}
+          alt={alt}
+          className={styles.regularImage}
+          style={{ maxWidth: '100%', maxHeight: '100%' }}
+        />
+      </div>
+    );
   };
 
   return (
@@ -269,10 +339,16 @@ export default function ImageProcessor() {
                 </div>
               </div>
               <div className={styles.imageContainer}>
-                {loading ? <div className={styles.emptyState}>Loading...</div> : (
-                  originalImage
-                    ? <img src={originalImage} className={styles.image} alt="Original" />
-                    : <div className={styles.emptyState}>No image selected</div>
+                {loading ? (
+                  <div className={styles.emptyState}>Loading...</div>
+                ) : originalImage ? (
+                  <SafeImage 
+                    src={originalImage} 
+                    className={styles.imageWrapper} 
+                    alt="Original" 
+                  />
+                ) : (
+                  <div className={styles.emptyState}>No image selected</div>
                 )}
               </div>
             </section>
@@ -282,10 +358,16 @@ export default function ImageProcessor() {
                 <span className={styles.imageTitle}>Adjusted Image</span>
               </div>
               <div className={styles.imageContainer}>
-                {loading ? <div className={styles.emptyState}>Loading...</div> : (
-                  adjustedImage
-                    ? <img src={adjustedImage} className={styles.image} alt="Adjusted" />
-                    : <div className={styles.emptyState}>No processed image</div>
+                {loading ? (
+                  <div className={styles.emptyState}>Loading...</div>
+                ) : adjustedImage ? (
+                  <SafeImage 
+                    src={adjustedImage} 
+                    className={styles.imageWrapper} 
+                    alt="Adjusted" 
+                  />
+                ) : (
+                  <div className={styles.emptyState}>No processed image</div>
                 )}
               </div>
             </section>
@@ -345,7 +427,11 @@ export default function ImageProcessor() {
                 )
               ) : (
                 originalHistogram ? (
-                  <img src={originalHistogram} className={styles.histogram} alt="Original Histogram" />
+                  <SafeImage 
+                    src={originalHistogram} 
+                    className={styles.histogramWrapper} 
+                    alt="Original Histogram" 
+                  />
                 ) : (
                   <div className={styles.emptyState}>No histogram</div>
                 )
@@ -372,7 +458,11 @@ export default function ImageProcessor() {
                 )
               ) : (
                 adjustedHistogram ? (
-                  <img src={adjustedHistogram} className={styles.histogram} alt="Adjusted Histogram" />
+                  <SafeImage 
+                    src={adjustedHistogram} 
+                    className={styles.histogramWrapper} 
+                    alt="Adjusted Histogram" 
+                  />
                 ) : (
                   <div className={styles.emptyState}>No histogram</div>
                 )
