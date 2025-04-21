@@ -1,6 +1,7 @@
 // pages/index.js
 import Head from 'next/head';
 import ImageProcessor from '../components/ImageProcessor';
+import '../styles/globals.css';
 
 export default function Home() {
   return (
