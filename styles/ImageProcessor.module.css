@@ -1,0 +1,308 @@
+:root {
+  --primary: navy;
+  --accent: tan;
+  --bg-light: whitesmoke;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.container {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  background-color: var(--bg-light);
+  overflow: hidden;
+}
+
+.appHeader {
+  height: 10%;
+  width: 100%;
+  background-color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+.title {
+  color: var(--bg-light);
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.mainLayout {
+  display: flex;
+  width: 100%;
+  height: 90%;
+}
+
+.leftPanel {
+  width: 60%;
+  height: 98%;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5%;
+}
+
+.imagesContainer {
+  display: flex;
+  width: 100%;
+  height: 80%;
+  gap: 1%;
+}
+
+.originalImageBox,
+.adjustedImageBox {
+  width: 48%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--primary);
+  background-color: var(--bg-light);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.controlsSection {
+  width: 95.25%;
+  height: 18%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--primary);
+  padding: 0 1%;
+  background-color: var(--bg-light);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-top: 1%;
+}
+
+.controlsSection .controlTitle {
+  margin: 0;
+  color: var(--primary);
+  font-size: 1rem;
+  border-bottom: 1px solid var(--primary);
+  padding-bottom: 4px;
+}
+
+.rightPanel {
+  width: 40%;
+  height: 98%;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5% 0.5% 0.5% 0.5%;
+  gap: 1%;
+}
+
+.histogramBox {
+  width: 100%;
+  height: 49.5%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--primary);
+  background-color: var(--bg-light);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.histogramHeader {
+  background-color: var(--accent);
+  color: var(--primary);
+  padding: 10px 16px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.histogramTitle {
+  font-size: 1rem;
+  margin: 0;
+  font-weight: bold;
+}
+
+.histogramImage {
+  display: flex;
+  width: 100%;
+  height: calc(100% - 40px);
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  box-sizing: border-box;
+  padding: 25px 20px;
+  /* Critical fix for histogram labels */
+  overflow: visible;
+  /* margin-top: -12px; */
+}
+
+.toggleButton {
+  padding: 6px 12px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-left: 15px;
+}
+
+.toggleButton:hover {
+  background-color: #3a7dca;
+}
+
+.imageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--accent);
+  color: var(--primary);
+  padding: 10px 16px;
+}
+
+.imageTitle {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.imageControls {
+  display: flex;
+  gap: 8px;
+}
+
+.addButton,
+.clearButton {
+  background-color: var(--bg-light);
+  border: 1px solid var(--primary);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.addButton:hover,
+.clearButton:hover {
+  transform: scale(1.1);
+}
+
+.imageContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  overflow: hidden;
+  padding: 2%;
+  box-sizing: border-box;
+}
+
+.image {
+  max-width: 96%;
+  max-height: 96%;
+  object-fit: contain;
+}
+
+.histogram {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  /* Don't clip the histogram */
+  margin: 0;
+}
+
+.emptyState {
+  font-style: italic;
+  color: #777;
+}
+
+.sliderContainer {
+  width: 100%;
+  margin: 5px 0;
+}
+
+.sliderLabel {
+  font-weight: 500;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider {
+  flex: 1;
+  height: 6px;
+  background: var(--primary);
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+}
+
+.valueInput {
+  width: 60px;
+  padding: 4px;
+  text-align: center;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+}
+
+@media (max-width: 800px) {
+  .mainLayout {
+    flex-direction: column;
+  }
+  .leftPanel,
+  .rightPanel {
+    width: 100%;
+    height: auto;
+  }
+  .imagesContainer {
+    flex-direction: column;
+    height: auto;
+  }
+  .originalImageBox,
+  .adjustedImageBox {
+    width: 100%;
+    height: 250px;
+    margin-bottom: 1%;
+  }
+  .controlsSection {
+    height: auto;
+    padding: 10px;
+  }
+  .histogramBox {
+    height: 250px;
+    margin-bottom: 16px;
+  }
+  .histogramImage {
+    padding: 30px 50px;
+  }
+}
+
+@media (max-width: 600px) {
+  .appHeader {
+    height: 8%;
+  }
+  .histogramBox {
+    height: 220px;
+  }
+}
