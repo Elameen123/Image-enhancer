@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/ImageProcessor.module.css';
+import '../styles/globals.css';
 import Chart from 'chart.js/auto';
 
 
