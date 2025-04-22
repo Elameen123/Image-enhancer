@@ -1,3 +1,4 @@
+/* Module-specific styles */
 .container {
   width: 100vw;
   height: 100vh;
@@ -254,7 +255,6 @@
   border-radius: 4px;
 }
 
-/* Add these to your ImageProcessor.module.css */
 .imageWrapper {
   max-width: 100%;
   max-height: 100%;

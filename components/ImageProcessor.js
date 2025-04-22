@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import styles from '../styles/ImageProcessor.module.css';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Chart from 'chart.js/auto';
-
+import Image from 'next/image';
+import styles from '../styles/ImageProcessor.module.css';
 
 // Client-side Histogram Component
 function Histogram({ imageData, title, className }) {
@@ -128,6 +128,54 @@ export default function ImageProcessor() {
     console.log("Backend URL:", backendURL);
   }, [backendURL]);
 
+  // Define applyAdjustments with useCallback to avoid dependency issues
+  const applyAdjustments = useCallback((imgData, a, b) => {
+    if (!adjustedCanvasRef.current) return;
+    
+    const ctx = adjustedCanvasRef.current.getContext('2d');
+    adjustedCanvasRef.current.width = imgData.width;
+    adjustedCanvasRef.current.height = imgData.height;
+    
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      d[i] = clamp(a * d[i] + b, 0, 255);
+      d[i+1] = clamp(a * d[i+1] + b, 0, 255);
+      d[i+2] = clamp(a * d[i+2] + b, 0, 255);
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+    setAdjustedImageData(imgData);
+    setAdjustedImage(adjustedCanvasRef.current.toDataURL('image/png'));
+  }, []);
+
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+  // Define adjustImageFromServer with useCallback
+  const adjustImageFromServer = useCallback(async () => {
+    if (!originalImage) return;
+    try {
+      const res = await fetch(`${backendURL}/api/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alpha, beta }),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log("Adjust response:", data);
+      
+      // Update the adjusted histogram (and image if needed)
+      if (!useClientHistograms && data.adjusted_histogram) {
+        setAdjustedHistogram(`data:image/png;base64,${data.adjusted_histogram}`);
+      }
+    } catch (error) {
+      console.error('Adjustment request failed:', error);
+    }
+  }, [originalImage, alpha, beta, backendURL, useClientHistograms]);
+
   useEffect(() => {
     if (originalImage && canvasRef.current) {
       const img = new Image();
@@ -145,7 +193,7 @@ export default function ImageProcessor() {
       };
       img.src = originalImage;
     }
-  }, [originalImage]);
+  }, [originalImage, alpha, beta, applyAdjustments]);
 
   useEffect(() => {
     if (imageData && canvasRef.current) {
@@ -162,28 +210,7 @@ export default function ImageProcessor() {
         timeoutRef.current = setTimeout(() => adjustImageFromServer(), 500);
       }
     }
-  }, [alpha, beta, imageData, useClientHistograms]);
-
-  const applyAdjustments = (imgData, a, b) => {
-    if (!adjustedCanvasRef.current) return;
-    
-    const ctx = adjustedCanvasRef.current.getContext('2d');
-    adjustedCanvasRef.current.width = imgData.width;
-    adjustedCanvasRef.current.height = imgData.height;
-    
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      d[i] = clamp(a * d[i] + b, 0, 255);
-      d[i+1] = clamp(a * d[i+1] + b, 0, 255);
-      d[i+2] = clamp(a * d[i+2] + b, 0, 255);
-    }
-    
-    ctx.putImageData(imgData, 0, 0);
-    setAdjustedImageData(imgData);
-    setAdjustedImage(adjustedCanvasRef.current.toDataURL('image/png'));
-  };
-
-  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+  }, [alpha, beta, imageData, useClientHistograms, applyAdjustments, adjustImageFromServer]);
 
   const handleImageUpload = async (e) => {
     if (!e.target.files.length) return;
@@ -240,36 +267,6 @@ export default function ImageProcessor() {
     }
   };
 
-  const adjustImageFromServer = async () => {
-    if (!originalImage) return;
-    try {
-      const res = await fetch(`${backendURL}/api/adjust`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ alpha, beta }),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      console.log("Adjust response:", data);
-      
-      // Update the adjusted histogram (and image if needed)
-      if (!useClientHistograms && data.adjusted_histogram) {
-        setAdjustedHistogram(`data:image/png;base64,${data.adjusted_histogram}`);
-      }
-      
-      // Optionally, update the adjusted image from server too for consistent results
-      // if (data.adjusted_image) {
-      //   setAdjustedImage(`data:image/png;base64,${data.adjusted_image}`);
-      // }
-    } catch (error) {
-      console.error('Adjustment request failed:', error);
-    }
-  };
-
   const clearImage = async () => {
     setOriginalImage(null);
     setAdjustedImage(null);
@@ -295,13 +292,16 @@ export default function ImageProcessor() {
     }
   };
 
-  // Custom image component that handles base64 images safely
+  // Custom image component that handles base64 images for dynamic content
   const SafeImage = ({ src, alt, className }) => {
     if (!src) return null;
     
+    // For base64 images, we need to use regular img tags
+    // Next.js Image component doesn't work well with base64 content
     return (
       <div className={className}>
-        {/* Replace Next.js Image with a regular img tag for base64 images */}
+        {/* We're keeping the regular img tag here because Next.js Image doesn't support 
+            dynamic base64 strings well (would require a custom loader) */}
         <img 
           src={src}
           alt={alt}
