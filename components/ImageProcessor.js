@@ -137,15 +137,22 @@ export default function ImageProcessor() {
     adjustedCanvasRef.current.width = imgData.width;
     adjustedCanvasRef.current.height = imgData.height;
     
-    const d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) {
-      d[i] = clamp(a * d[i] + b, 0, 255);
-      d[i+1] = clamp(a * d[i+1] + b, 0, 255);
-      d[i+2] = clamp(a * d[i+2] + b, 0, 255);
+    // IMPORTANT: Don't directly modify the data!
+    // Instead, create a new Uint8ClampedArray with the adjusted values
+    const newData = new Uint8ClampedArray(imgData.data);
+    for (let i = 0; i < newData.length; i += 4) {
+      newData[i] = clamp(a * imgData.data[i] + b, 0, 255);
+      newData[i+1] = clamp(a * imgData.data[i+1] + b, 0, 255);
+      newData[i+2] = clamp(a * imgData.data[i+2] + b, 0, 255);
+      // Keep alpha channel unchanged
+      newData[i+3] = imgData.data[i+3];
     }
     
-    ctx.putImageData(imgData, 0, 0);
-    setAdjustedImageData(imgData);
+    // Create a new ImageData with the adjusted values
+    const adjustedData = new ImageData(newData, imgData.width, imgData.height);
+    
+    ctx.putImageData(adjustedData, 0, 0);
+    setAdjustedImageData(adjustedData);
     setAdjustedImage(adjustedCanvasRef.current.toDataURL('image/png'));
   }, []);
 
@@ -179,7 +186,7 @@ export default function ImageProcessor() {
 
   useEffect(() => {
     if (originalImage && canvasRef.current) {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
@@ -235,7 +242,7 @@ export default function ImageProcessor() {
       console.log("Upload response:", data);
       
       // Create an actual image object to verify the data is valid
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         setImgWidth(img.width);
         setImgHeight(img.height);
