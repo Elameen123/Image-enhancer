@@ -8,6 +8,23 @@ function Histogram({ imageData, title, className }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
 
+  
+  // Calculate histogram data from image data
+  const calculateHistogram = (imgData) => {
+    const histR = Array(256).fill(0);
+    const histG = Array(256).fill(0);
+    const histB = Array(256).fill(0);
+    
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      histR[data[i]]++;      // Red
+      histG[data[i + 1]]++;  // Green
+      histB[data[i + 2]]++;  // Blue
+    }
+    
+    return { r: histR, g: histG, b: histB };
+  };
+
   useEffect(() => {
     if (!imageData || !canvasRef.current) return;
     
@@ -82,22 +99,6 @@ function Histogram({ imageData, title, className }) {
       }
     });
   }, [imageData, title]);
-
-  // Calculate histogram data from image data
-  const calculateHistogram = (imgData) => {
-    const histR = Array(256).fill(0);
-    const histG = Array(256).fill(0);
-    const histB = Array(256).fill(0);
-    
-    const data = imgData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      histR[data[i]]++;      // Red
-      histG[data[i + 1]]++;  // Green
-      histB[data[i + 2]]++;  // Blue
-    }
-    
-    return { r: histR, g: histG, b: histB };
-  };
 
   return <canvas ref={canvasRef} className={className} />;
 }
