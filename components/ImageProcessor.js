@@ -156,7 +156,10 @@ export default function ImageProcessor() {
     setAdjustedImage(adjustedCanvasRef.current.toDataURL('image/png'));
   }, []);
 
-  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+  const clamp = (v, min, max) => {
+    console.log(`Clipping value ${v} to [${min}, ${max}]`);  // Debug log
+    return Math.min(Math.max(v, min), max);
+};
 
   // Define adjustImageFromServer with useCallback
   const adjustImageFromServer = useCallback(async () => {
