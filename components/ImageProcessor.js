@@ -157,7 +157,7 @@ export default function ImageProcessor() {
   }, []);
 
   const clamp = (v, min, max) => {
-    console.log(`Clipping value ${v} to [${min}, ${max}]`);  // Debug log
+    // console.log(`Clipping value ${v} to [${min}, ${max}]`);  // Debug log
     return Math.min(Math.max(v, min), max);
 };
 
